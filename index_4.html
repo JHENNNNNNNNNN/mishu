@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-Hant" data-skin="white">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="米數計算">
+<meta name="theme-color" content="#fff4f7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='3' width='56' height='56' rx='14' fill='%23fff' stroke='%23232a3d' stroke-width='4'/%3E%3Crect x='12' y='11' width='38' height='26' rx='5' fill='%237fb6ff' stroke='%23232a3d' stroke-width='3'/%3E%3Ccircle cx='45' cy='48' r='6' fill='%23ff5c93' stroke='%23232a3d' stroke-width='3'/%3E%3C/svg%3E">
+<title>捲料米數計算</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Zen+Maru+Gothic:wght@500;700&family=Press+Start+2P&display=swap">
+<style>
+/* Layout: a misty pastel handheld console — LCD screen shows the result, inputs sit on the body, A/B switch modes, START copies */
+:root{
+  --desk:#eef1f6; --desk2:#dfe5ee;
+  --shell:#c4d0de; --shell-lt:#d3ddea; --shell-dk:#a6b5c8; --shell-ink:#4f5d75; --soft-ink:#7f8ca3;
+  --lcd:#d6e4df; --lcd-dk:#b7cbc4; --pix:#3d5560; --pix-soft:#6c8590;
+  --bezel:#8695ad; --btn-ab:#e8aab8; --btn-ab-dk:#c98797; --btn-on:#d895a5;
+  --field:#f4f7fb; --row:#d6dfea; --blush:#f2c3cd; --dark-btn:#7b89a1;
+  --warn:#b0566d;
+  --f-cute:"Huninn","Zen Maru Gothic","jf-openhuninn","Microsoft JhengHei",sans-serif;
+  --f-pix:"Press Start 2P",ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:radial-gradient(circle at 15% 0%,var(--desk) 0,var(--desk2) 75%);min-height:100vh;background-color:var(--desk2);color:var(--shell-ink);font-family:var(--f-cute);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px}
+.console{max-width:440px;margin:0 auto;background:linear-gradient(180deg,var(--shell-lt),var(--shell));border-radius:34px 34px 80px 34px;
+  padding:18px 18px 26px;box-shadow:0 14px 30px rgba(79,93,117,.22),inset 0 -6px 0 var(--shell-dk),inset 0 3px 0 rgba(255,255,255,.6);display:flex;flex-direction:column;gap:16px;position:relative}
+.topline{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--soft-ink);letter-spacing:.1em}
+.topline i{display:block;height:6px;flex:1;margin:0 10px;border-radius:3px;background:var(--shell-dk);opacity:.6}
+.sticker{position:absolute;font-size:18px;color:var(--btn-ab);pointer-events:none;z-index:2}
+/* screen */
+.bezel{background:var(--bezel);border-radius:20px 20px 46px 20px;padding:14px 22px 16px;position:relative}
+.bezel .led{position:absolute;left:7px;top:44%;color:var(--blush);font-size:11px;line-height:1;text-shadow:0 0 6px var(--blush)}
+.bezel .cap{font-size:11px;color:#e3e9f2;letter-spacing:.12em;margin-bottom:8px;text-align:center}
+.lcd{background:var(--lcd);border-radius:10px;padding:12px 12px 10px;color:var(--pix);box-shadow:inset 0 0 0 2px var(--lcd-dk),inset 3px 3px 0 rgba(61,85,96,.08);
+  background-image:linear-gradient(rgba(61,85,96,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(61,85,96,.035) 1px,transparent 1px);background-size:3px 3px;min-height:200px;display:flex;flex-direction:column;gap:8px;position:relative}
+.face{position:absolute;right:12px;top:10px;font-size:13px;color:var(--pix-soft);display:inline-block;animation:bob 1.8s ease-in-out infinite;transform-origin:50% 100%}
+.face.sad{animation:sway 1.2s ease-in-out infinite;color:var(--warn)}
+.face.yay{animation:hop .45s ease-out 2}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes hop{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-7px) scale(1.08)}70%{transform:translateY(0) scale(.96,1.04)}}
+.mode{display:flex;gap:6px;font-size:14px;flex-wrap:wrap;padding-right:70px}
+.mode span{padding:1px 10px;border:2px solid var(--pix-soft);border-radius:999px;opacity:.5}
+.mode span.on{background:var(--pix);border-color:var(--pix);color:var(--lcd);opacity:1}
+.lcd .label{font-size:13px;color:var(--pix-soft)}
+.big{font:22px/1.35 var(--f-pix);font-variant-numeric:tabular-nums;word-break:break-all}
+.big small{font:15px var(--f-cute);margin-left:6px}
+.big.blink{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+.area{font:11px var(--f-pix)}
+.area small{font:13px var(--f-cute)}
+.steps{list-style:none;margin:0;padding:0;font-size:13px}
+.steps li{display:flex;justify-content:space-between;gap:8px;border-top:1px dashed var(--pix-soft);padding-top:2px}
+.steps li b{font:10px/1.9 var(--f-pix);font-weight:400;white-space:nowrap}
+.err{font-size:14px;color:var(--warn)}
+/* body inputs */
+.brand{font:700 22px var(--f-cute);color:var(--shell-ink);margin:0;letter-spacing:.06em;display:flex;align-items:baseline;gap:8px}
+.brand small{font:9px var(--f-pix);color:var(--btn-ab-dk);letter-spacing:.1em}
+.panel{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.flabel{font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.field label small,.flabel small{font-size:12px;color:var(--soft-ink)}
+.inbox{display:flex;background:var(--field);border-radius:999px;box-shadow:inset 0 3px 0 rgba(79,93,117,.12);border:2px solid var(--shell-dk);overflow:hidden;min-width:0}
+.inbox:focus-within{border-color:var(--btn-ab-dk);box-shadow:0 0 0 3px var(--blush)}
+.inbox input{flex:1;width:100%;min-width:0;border:0;background:transparent;font:20px var(--f-cute);color:var(--shell-ink);padding:8px 16px;outline:none}
+.inbox span{display:flex;align-items:center;padding:0 14px 0 6px;font-size:13px;color:var(--soft-ink)}
+.auto{border:0;background:none;color:var(--btn-ab-dk);font:13px var(--f-cute);cursor:pointer;padding:0}
+.hint{font-size:12px;color:var(--soft-ink);padding-left:8px}
+.rows{display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:1fr 1fr .75fr 34px;gap:6px;align-items:end;background:var(--row);border-radius:20px;padding:8px 10px}
+.row .field label{font-size:12px;padding-left:6px}
+.row .inbox input{font-size:16px;padding:6px 10px}
+.row .inbox span{font-size:11px;padding:0 8px 0 2px}
+.row .sum{grid-column:1/-1;font-size:12px;color:var(--soft-ink);text-align:right}
+.del{width:34px;height:34px;border-radius:50%;border:0;background:var(--shell-dk);color:var(--field);font:16px var(--f-cute);cursor:pointer;box-shadow:0 3px 0 var(--soft-ink)}
+.del:disabled{opacity:.35;cursor:default}
+.add{border:2px dashed var(--soft-ink);background:transparent;color:var(--shell-ink);border-radius:999px;padding:8px;font:15px var(--f-cute);cursor:pointer}
+/* controls */
+.controls{display:grid;grid-template-columns:1fr 1fr;align-items:center;margin-top:6px}
+.dpad{position:relative;width:96px;height:96px;margin-left:8px}
+.dpad i{position:absolute;background:var(--dark-btn);border-radius:10px;box-shadow:0 3px 0 var(--shell-ink)}
+.dpad i:nth-child(1){left:32px;top:0;width:32px;height:96px}
+.dpad i:nth-child(2){top:32px;left:0;width:96px;height:32px}
+.dpad i:nth-child(3){left:40px;top:40px;width:16px;height:16px;border-radius:50%;background:var(--shell-dk);box-shadow:none}
+.ab{display:flex;gap:14px;justify-content:flex-end;transform:rotate(-22deg);margin-right:6px}
+.ab div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ab button{width:56px;height:56px;border-radius:50%;border:0;background:var(--btn-ab);color:#fff;font:13px var(--f-pix);cursor:pointer;box-shadow:0 5px 0 var(--btn-ab-dk),inset 0 3px 0 rgba(255,255,255,.45)}
+.ab button[aria-selected="true"]{transform:translateY(4px);box-shadow:0 1px 0 var(--btn-ab-dk);background:var(--btn-on)}
+.ab span{font:12px var(--f-cute);color:var(--shell-ink);white-space:nowrap}
+.pills{display:flex;justify-content:center;gap:22px;margin-top:6px}
+.pills div{display:flex;flex-direction:column;align-items:center;gap:4px;transform:rotate(-22deg)}
+.pills button{width:52px;height:16px;border-radius:999px;border:0;background:var(--dark-btn);cursor:pointer;box-shadow:0 3px 0 var(--shell-ink)}
+.pills button:active,.ab button:active,.del:active{transform:translateY(2px);box-shadow:none}
+.pills span{font:9px var(--f-pix);color:var(--shell-ink);letter-spacing:.05em}
+.pills small{font:11px var(--f-cute);color:var(--soft-ink)}
+.speaker{display:grid;grid-template-columns:repeat(4,9px);gap:7px;justify-content:end;margin:4px 18px 0 0}
+.speaker i{width:9px;height:9px;border-radius:50%;background:var(--shell-dk);box-shadow:inset 0 2px 0 var(--soft-ink)}
+button:focus-visible,.add:focus-visible{outline:3px solid var(--btn-ab-dk);outline-offset:3px}
+.formula{max-width:440px;margin:18px auto 0;color:var(--soft-ink);font-size:13px;line-height:1.7;padding-inline:6px}
+.formula b{color:var(--shell-ink);font-weight:400}
+.formula code{font-family:var(--f-cute);display:block;overflow-x:auto;white-space:nowrap;color:var(--shell-ink)}
+/* ---- 配色 ---- */
+:root[data-skin="pink"]{--desk:#f7eff1;--desk2:#efe1e5;--shell-lt:#f1dde2;--shell:#e5cbd2;--shell-dk:#cfb0b9;--shell-ink:#6a4f5a;--soft-ink:#a48893;
+  --lcd:#f3e9e4;--lcd-dk:#dccbc4;--pix:#6b4a52;--pix-soft:#9b7a82;--bezel:#b9909c;--btn-ab:#a9bfd6;--btn-ab-dk:#8aa2bc;--btn-on:#98b0c9;
+  --field:#fbf6f7;--row:#ecd8dd;--blush:#f4d0d8;--dark-btn:#b38f9a}
+:root[data-skin="matcha"]{--desk:#f1f3ec;--desk2:#e3e8db;--shell-lt:#dbe3d0;--shell:#c8d3bb;--shell-dk:#aab79b;--shell-ink:#4f5d45;--soft-ink:#81907a;
+  --lcd:#eef0dc;--lcd-dk:#d3d8bb;--pix:#46553c;--pix-soft:#76866b;--bezel:#8f9c80;--btn-ab:#e2b994;--btn-ab-dk:#c69b76;--btn-on:#d5aa84;
+  --field:#f8faf4;--row:#d5ddca;--blush:#f1d6bf;--dark-btn:#8a977c}
+:root[data-skin="lavender"]{--desk:#f2f0f7;--desk2:#e5e1ef;--shell-lt:#ddd7ea;--shell:#cdc5df;--shell-dk:#b1a8c8;--shell-ink:#56506e;--soft-ink:#8b84a3;
+  --lcd:#e6e9f2;--lcd-dk:#c9cede;--pix:#4a4d68;--pix-soft:#7a7e98;--bezel:#958daf;--btn-ab:#f0bfa6;--btn-ab-dk:#d39f86;--btn-on:#e3ae95;
+  --field:#f8f7fc;--row:#d9d2e7;--blush:#f5d3c3;--dark-btn:#8f87a8}
+:root[data-skin="milktea"]{--desk:#f4f0eb;--desk2:#e9e1d8;--shell-lt:#e2d6c9;--shell:#d4c4b3;--shell-dk:#b9a693;--shell-ink:#5e5044;--soft-ink:#958473;
+  --lcd:#e9e8dc;--lcd-dk:#cfcdbb;--pix:#4f4a3d;--pix-soft:#7f7867;--bezel:#9d8b79;--btn-ab:#a8b9c9;--btn-ab-dk:#889bae;--btn-on:#98aabd;
+  --field:#faf7f3;--row:#ddd0c2;--blush:#ecd3c4;--dark-btn:#9a8877}
+:root[data-skin="white"]{--desk:#eef1f6;--desk2:#dfe4ed;--shell-lt:#ffffff;--shell:#f1f2f6;--shell-dk:#d6dae3;--shell-ink:#4c5770;--soft-ink:#8a93a7;
+  --lcd:#e3ede9;--lcd-dk:#c6d5cf;--pix:#3a5059;--pix-soft:#6b8590;--bezel:#9aa5ba;--btn-ab:#f0b3c1;--btn-ab-dk:#cf8e9e;--btn-on:#e5a2b2;
+  --field:#ffffff;--row:#eceef4;--blush:#f7d3dc;--dark-btn:#a3adc0}
+/* ---- 外型 ---- */
+:root[data-shape="round"] .console{border-radius:60px;padding:26px 22px 34px}
+:root[data-shape="round"] .bezel{border-radius:34px;padding-inline:24px}
+:root[data-shape="round"] .lcd{border-radius:22px}
+:root[data-shape="round"] .row{border-radius:26px}
+:root[data-shape="round"] .dpad i{border-radius:16px}
+:root[data-shape="pixel"] .console{border-radius:8px;box-shadow:6px 6px 0 var(--shell-dk),inset 0 -6px 0 var(--shell-dk)}
+:root[data-shape="pixel"] .bezel,:root[data-shape="pixel"] .lcd,:root[data-shape="pixel"] .row{border-radius:4px}
+:root[data-shape="pixel"] .inbox,:root[data-shape="pixel"] .add,:root[data-shape="pixel"] .pills button{border-radius:4px}
+:root[data-shape="pixel"] .ab button,:root[data-shape="pixel"] .del{border-radius:8px}
+:root[data-shape="pixel"] .dpad i{border-radius:2px}
+/* ---- 選擇器 ---- */
+.picker{max-width:440px;margin:0 auto 18px;display:flex;flex-direction:column;gap:10px}
+.picker .ptitle{font-size:13px;color:var(--soft-ink)}
+.swatches,.shapes{display:flex;flex-wrap:wrap;gap:8px}
+.sw{display:flex;align-items:center;gap:6px;border:2px solid transparent;background:var(--field);color:var(--shell-ink);border-radius:999px;padding:4px 12px 4px 4px;font:14px var(--f-cute);cursor:pointer;box-shadow:0 2px 0 var(--shell-dk)}
+.sw i{width:24px;height:24px;border-radius:50%;position:relative;flex:none}
+.sw i::after{content:"";position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:50%;background:var(--dot);border:2px solid var(--field)}
+.sw[aria-pressed="true"],.sh[aria-pressed="true"]{border-color:var(--btn-ab-dk)}
+.sh{border:2px solid transparent;background:var(--field);color:var(--shell-ink);border-radius:999px;padding:4px 14px;font:14px var(--f-cute);cursor:pointer;box-shadow:0 2px 0 var(--shell-dk)}
+/* ---- 立體按鈕：統一凸起、按下會沉、放開會彈 ---- */
+.sw,.sh,.add,.del,.auto,.pills button,.ab button{
+  --lift:4px;--edge:var(--shell-dk);
+  position:relative;transition:transform .09s ease-out,box-shadow .09s ease-out,background-color .2s;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.sw,.sh,.add{background:linear-gradient(180deg,var(--field),var(--row));border:2px solid var(--shell-dk);
+  box-shadow:0 var(--lift) 0 var(--edge),0 calc(var(--lift) + 3px) 6px rgba(0,0,0,.12),inset 0 2px 0 rgba(255,255,255,.7)}
+.add{border-style:solid;font-weight:700}
+.auto{--lift:3px;background:linear-gradient(180deg,var(--btn-ab),var(--btn-on));color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;
+  --edge:var(--btn-ab-dk);box-shadow:0 var(--lift) 0 var(--edge),inset 0 2px 0 rgba(255,255,255,.45)}
+.del{--lift:3px;--edge:var(--soft-ink);background:linear-gradient(180deg,var(--shell-dk),var(--soft-ink));
+  box-shadow:0 var(--lift) 0 var(--shell-ink),inset 0 2px 0 rgba(255,255,255,.35)}
+.pills button{--lift:4px;background:linear-gradient(180deg,var(--dark-btn),var(--shell-ink));
+  box-shadow:0 var(--lift) 0 var(--shell-ink),0 6px 6px rgba(0,0,0,.15),inset 0 2px 0 rgba(255,255,255,.3)}
+.ab button{--lift:6px;background:radial-gradient(circle at 35% 30%,#fff6 0,transparent 45%),var(--btn-ab);
+  box-shadow:0 var(--lift) 0 var(--btn-ab-dk),0 9px 10px rgba(0,0,0,.18),inset 0 -3px 0 rgba(0,0,0,.08)}
+.ab button[aria-selected="true"]{transform:none;background:radial-gradient(circle at 35% 30%,#fff6 0,transparent 45%),var(--btn-on);
+  box-shadow:0 var(--lift) 0 var(--btn-ab-dk),0 9px 10px rgba(0,0,0,.18),0 0 0 3px var(--blush)}
+.sw[aria-pressed="true"],.sh[aria-pressed="true"]{border-color:var(--btn-ab-dk);background:linear-gradient(180deg,var(--blush),var(--field))}
+/* 按下 */
+.sw:active,.sh:active,.add:active,.del:active,.auto:active,.pills button:active,.ab button:active,
+.is-down{transform:translateY(var(--lift)) scale(.97)!important;box-shadow:0 0 0 var(--edge),inset 0 2px 4px rgba(0,0,0,.15)!important}
+.del:disabled{transform:none!important;box-shadow:0 3px 0 var(--shell-ink)!important}
+/* 放開彈一下 */
+.boing{animation:boing .32s ease-out}
+@keyframes boing{0%{transform:translateY(var(--lift)) scale(.95)}45%{transform:translateY(-3px) scale(1.06)}75%{transform:translateY(1px) scale(.99)}100%{transform:none}}
+.pills .boing{animation-name:boing}
+/* D-pad：可以按，會往按的方向傾斜 */
+.dpad{perspective:260px}
+.dpad .cross{position:absolute;inset:0;transition:transform .1s ease-out;transform-style:preserve-3d}
+.dpad .cross i{background:linear-gradient(180deg,var(--dark-btn),var(--shell-ink));box-shadow:0 6px 0 var(--shell-ink),0 9px 10px rgba(0,0,0,.2)}
+.dpad .cross i:nth-child(3){background:var(--shell-dk);box-shadow:inset 0 2px 3px rgba(0,0,0,.25)}
+.dpad.up .cross{transform:rotateX(16deg) translateY(2px)}
+.dpad.down .cross{transform:rotateX(-16deg) translateY(2px)}
+.dpad.left .cross{transform:rotateY(-16deg) translateY(2px)}
+.dpad.right .cross{transform:rotateY(16deg) translateY(2px)}
+.dz{position:absolute;width:32px;height:32px;border:0;background:transparent;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;z-index:2}
+.dz.up{left:32px;top:0}.dz.down{left:32px;bottom:0}.dz.left{left:0;top:32px}.dz.right{right:0;top:32px}
+.dz::after{content:"";position:absolute;inset:11px;border:5px solid transparent}
+.dz.up::after{border-bottom-color:var(--shell-dk);inset:6px 11px 16px}
+.dz.down::after{border-top-color:var(--shell-dk);inset:16px 11px 6px}
+.dz.left::after{border-right-color:var(--shell-dk);inset:11px 16px 11px 6px}
+.dz.right::after{border-left-color:var(--shell-dk);inset:11px 6px 11px 16px}
+/* 結果更新時螢幕數字跳一下 */
+.big.pop{animation:pop .25s ease-out}
+@keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.big.blink{animation:none}}
+@media (prefers-reduced-motion:reduce){.boing,.big.pop{animation:none}.dpad .cross{transition:none}}
+@media (prefers-reduced-motion:reduce){.face,.face.sad,.face.yay{animation:none}}
+@media (max-width:480px){.row{grid-template-columns:1fr 1fr}.row .q{grid-column:1}.row .del{justify-self:end;align-self:end;margin-bottom:2px}
+  .console{padding-inline:14px}.bezel{padding-inline:18px}}
+@media (max-width:370px){.big{font-size:18px}.ab button{width:48px;height:48px}.dpad{transform:scale(.88);transform-origin:left center}}
+/* ---- 動畫風 ---- */
+:root{--o:#232a3d}
+body{background:radial-gradient(circle,#ffd3e0 1.6px,transparent 2px) 0 0/14px 14px,#fff4f7!important}
+.console{background:linear-gradient(135deg,#fff 0 60%,#eaf2ff 60%)!important;border:3.5px solid var(--o);box-shadow:6px 7px 0 var(--o)!important}
+.topline i{background:var(--o)!important;opacity:1!important;height:4px!important}
+.topline{color:#ff5c93!important}
+.bezel{background:linear-gradient(160deg,#7fb6ff 0 55%,#5f97ea 55%)!important;border:3px solid var(--o)}
+.bezel .cap{color:#fff!important;font-weight:700}
+.lcd{background:linear-gradient(160deg,#f1fff6 0 70%,#d9f3e4 70%)!important;border:3px solid var(--o);box-shadow:none!important}
+.inbox{background:#fff!important;border:3px solid var(--o)!important;box-shadow:3px 3px 0 var(--o)!important}
+.row{background:#fff0f5!important;border:3px solid var(--o)}
+.ab button{background:radial-gradient(circle at 32% 28%,#fff 0 13%,transparent 14%),linear-gradient(160deg,#ff8fb6 0 55%,#ff5c93 55%)!important;border:3px solid var(--o)!important;box-shadow:0 5px 0 var(--o)!important;color:#fff!important}
+.pills button{background:linear-gradient(160deg,#ffd76b 0 55%,#ffbf3a 55%)!important;border:3px solid var(--o)!important;box-shadow:0 3px 0 var(--o)!important}
+.dpad .cross i{background:linear-gradient(160deg,#5b6380 0 55%,#3d4460 55%)!important;border:3px solid var(--o);box-shadow:0 4px 0 var(--o)!important}
+.dpad .cross i:nth-child(3){display:none}
+.add,.del,.auto{background:linear-gradient(160deg,#fff 0 55%,#ffe3ec 55%)!important;border:3px solid var(--o)!important;box-shadow:0 4px 0 var(--o)!important;color:var(--o)!important}
+.speaker i{background:var(--o)!important;box-shadow:none!important}
+.brand{color:var(--o)!important;font-weight:900!important;text-shadow:2px 2px 0 #ffb3cc}
+.sticker{color:#ffbf3a!important;font-size:26px!important}
+.field label,.flabel{font-weight:700;color:var(--o)}
+
+.inbox:focus-within{box-shadow:3px 3px 0 #ff5c93!important;border-color:#ff5c93!important}
+.ab button[aria-selected="true"]{outline:3px solid #ffb3cc;outline-offset:2px}
+/* 按下時陰影收起來、往下沉 */
+.ab button:active,.pills button:active,.add:active,.del:active,.auto:active,.is-down{transform:translateY(4px) scale(.97)!important;box-shadow:0 0 0 var(--o)!important}
+.del:disabled{opacity:.4;transform:none!important}
+.dpad.up .cross i,.dpad.down .cross i,.dpad.left .cross i,.dpad.right .cross i{box-shadow:0 1px 0 var(--o)!important}
+.dz.up::after{border-bottom-color:#fff}.dz.down::after{border-top-color:#fff}.dz.left::after{border-right-color:#fff}.dz.right::after{border-left-color:#fff}
+.lcd .label,.mode span{font-weight:700}
+.formula b{color:var(--o);font-weight:700}
+</style>
+</head>
+<body style="margin:0">
+
+
+<div class="console">
+  <div class="topline">♡<i></i>✿</div>
+  <span class="sticker" style="right:10px;top:70px" aria-hidden="true">★</span>
+
+  <div class="bezel">
+    <div class="led" aria-hidden="true">♥</div>
+    <div class="cap">˚₊‧ 米數計算機 ‧₊˚</div>
+    <div class="lcd" aria-live="polite">
+      <div class="face" id="face" aria-hidden="true">(｡•ᴗ•｡)</div>
+      <div class="mode" aria-hidden="true"><span id="m-roll" class="on">A 整捲米數</span><span id="m-remnant">B 餘料換算</span></div>
+      <div class="label" id="resLabel">米數</div>
+      <div class="big" id="out">—</div>
+      <div class="area" id="areaBox" hidden><small>餘料總面積 </small><span id="area">—</span></div>
+      <div class="err" id="err" hidden></div>
+      <ul class="steps" id="steps"></ul>
+    </div>
+  </div>
+
+  <h1 class="brand">米數計算機 <small>ROLL BOY</small></h1>
+
+  <!-- A：整捲米數 -->
+  <div class="panel" id="roll">
+    <div class="field">
+      <label for="core">內管心直徑 <small>公分</small></label>
+      <div class="inbox"><input id="core" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0" value="7.6"><span>cm</span></div>
+    </div>
+    <div class="field">
+      <label for="total">總直徑 <small>公分</small></label>
+      <div class="inbox"><input id="total" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0" value="30"><span>cm</span></div>
+    </div>
+    <div class="field">
+      <label for="thick">材料厚度（含紙或膜） <small>公釐</small></label>
+      <div class="inbox"><input id="thick" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0" value="0.05"><span>mm</span></div>
+    </div>
+    <div class="field">
+      <label for="radius">材料半徑 <button class="auto" id="autoBtn" type="button" hidden>改回自動</button></label>
+      <div class="inbox"><input id="radius" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0"><span>cm</span></div>
+      <div class="hint" id="rHint">自動 =（總直徑 − 管心直徑）÷ 2，也可手動修改</div>
+    </div>
+  </div>
+
+  <!-- B：餘料換算 -->
+  <div class="panel" id="remnant" hidden>
+    <div class="field">
+      <label for="origW">原材幅寬 <small>公釐</small></label>
+      <div class="inbox"><input id="origW" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0" value="1000"><span>mm</span></div>
+    </div>
+    <div class="flabel">餘料 <small>可加多筆不同幅寬</small></div>
+    <div class="rows" id="rows"></div>
+    <button class="add" id="addRow" type="button">＋ 新增一筆餘料</button>
+  </div>
+
+  <div class="controls">
+    <div class="dpad" id="dpad"><div class="cross" aria-hidden="true"><i></i><i></i><i></i></div>
+      <button class="dz up" data-dir="up" type="button" aria-label="切換模式"></button>
+      <button class="dz down" data-dir="down" type="button" aria-label="切換模式"></button>
+      <button class="dz left" data-dir="left" type="button" aria-label="整捲米數"></button>
+      <button class="dz right" data-dir="right" type="button" aria-label="餘料換算"></button>
+    </div>
+    <div class="ab" role="tablist" aria-label="切換模式">
+      <div><button role="tab" id="t-remnant" aria-controls="remnant" aria-selected="false">B</button><span>餘料換算</span></div>
+      <div><button role="tab" id="t-roll" aria-controls="roll" aria-selected="true">A</button><span>整捲米數</span></div>
+    </div>
+  </div>
+  <div class="pills">
+    <div><button id="selBtn" type="button" aria-label="切換模式"></button><span>SELECT</span><small>切換</small></div>
+    <div><button id="copyBtn" type="button" aria-label="複製結果"></button><span>START</span><small id="copyTxt">複製結果</small></div>
+  </div>
+  <div class="speaker" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+</div>
+
+<div class="formula">
+  <p><b>A 整捲米數</b><code>（內管心直徑 + 總直徑）× 0.0157 ÷ 材料厚度 × 材料半徑 × 10</code>
+  材料半徑 =（總直徑 − 管心直徑）÷ 2；厚度用 mm，例如 50 µm 輸入 0.05。</p>
+  <p><b>B 餘料換算</b><code>幅寬 ÷ 1000 × 米數 × 數量 = 米平方</code><code>米平方 ÷（原幅寬 ÷ 1000）= 原材米數</code>
+  幅寬用 mm；多筆餘料先加總米平方再換算。</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=(n,d=2)=>n.toLocaleString('zh-TW',{maximumFractionDigits:d});
+const out=$('out'),err=$('err'),steps=$('steps');
+let mode='roll';
+
+/* 表情：平常會眨眼晃動，算出結果會跳，有錯會難過 */
+const FACES={idle:'(｡•ᴗ•｡)',blink:'(｡-ᴗ-｡)',yay:'✧(｡•̀ᴗ-)✧',sad:'(｡•́︿•̀｡)'};
+let faceState='idle',yayTimer=null;
+function setFace(st){
+  const f=$('face'); if(!f) return;
+  if(st==='yay'){
+    if(faceState==='yay'){clearTimeout(yayTimer)}
+    faceState='yay';f.className='face';void f.offsetWidth;f.classList.add('yay');f.textContent=FACES.yay;
+    yayTimer=setTimeout(()=>{if(faceState==='yay'){faceState='idle';f.className='face';f.textContent=FACES.idle}},1100);
+  }else if(st==='sad'){clearTimeout(yayTimer);faceState='sad';f.className='face sad';f.textContent=FACES.sad}
+}
+setInterval(()=>{
+  const f=$('face'); if(!f||faceState!=='idle') return;
+  f.textContent=FACES.blink; setTimeout(()=>{if(faceState==='idle') f.textContent=FACES.idle},180);
+},2800);
+function render(res){ // res: {label, value, unit, digits, lines, error, area}
+  $('resLabel').textContent=res.label;
+  $('areaBox').hidden=res.area===undefined;
+  if(res.area!==undefined) $('area').textContent=res.area;
+  setFace(res.error?'sad':'yay');
+  if(res.error){err.textContent='▶ '+res.error;err.hidden=false;out.textContent='----';out.classList.add('blink');out.dataset.v='';steps.innerHTML='';return}
+  err.hidden=true;out.classList.remove('blink');
+  out.innerHTML=fmt(res.value,res.digits)+'<small>米</small>';out.dataset.v=fmt(res.value,res.digits);
+  steps.innerHTML=res.lines.map(([a,b])=>`<li><span>${a}</span><b>${b}</b></li>`).join('');
+}
+function refresh(){mode==='roll'?calc():calc2()}
+
+/* modes */
+const tabs={roll:$('t-roll'),remnant:$('t-remnant')};
+function show(name){
+  if(!tabs[name]) name='roll';
+  mode=name;
+  for(const k in tabs){const on=k===name;tabs[k].setAttribute('aria-selected',on);$(k).hidden=!on;$('m-'+k).classList.toggle('on',on)}
+  refresh();
+}
+for(const k in tabs) tabs[k].addEventListener('click',()=>{show(k);history.replaceState(null,'','#'+k)});
+$('selBtn').addEventListener('click',()=>{const n=mode==='roll'?'remnant':'roll';show(n);history.replaceState(null,'','#'+n)});
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+
+/* copy */
+$('copyBtn').addEventListener('click',async()=>{
+  const v=out.dataset.v,t=$('copyTxt');if(!v) return;
+  try{await navigator.clipboard.writeText(v);t.textContent='已複製！'}
+  catch(e){const r=document.createRange();r.selectNodeContents(out);const s=getSelection();s.removeAllRanges();s.addRange(r);t.textContent='已選取'}
+  setTimeout(()=>t.textContent='複製結果',1500);
+});
+
+/* A 整捲米數 */
+const core=$('core'),total=$('total'),thick=$('thick'),radius=$('radius');
+let manualR=false;
+function calc(){
+  const d=parseFloat(core.value),D=parseFloat(total.value),t=parseFloat(thick.value);
+  if(!manualR) radius.value=(isFinite(d)&&isFinite(D))?+((D-d)/2).toFixed(3):'';
+  const r=parseFloat(radius.value);
+  $('autoBtn').hidden=!manualR;
+  $('rHint').textContent=manualR?'目前使用手動輸入的半徑':'自動 =（總直徑 − 管心直徑）÷ 2，也可手動修改';
+  if(mode!=='roll') return;
+  let e='';
+  if(![d,D,t,r].every(isFinite)) e='請填入所有欄位';
+  else if(t<=0) e='材料厚度需大於 0';
+  else if(D<=d&&!manualR) e='總直徑需大於內管心直徑';
+  if(e) return render({label:'米數',error:e});
+  const s1=(d+D)*0.0157,s2=s1/t,s3=s2*r,m=s3*10;
+  render({label:'米數',value:m,digits:1,lines:[['(管心+總直徑)×0.0157',fmt(s1,4)],['÷ 厚度 '+t,fmt(s2,3)],['× 半徑 '+r,fmt(s3,3)],['× 10',fmt(m,1)]]});
+}
+[core,total,thick].forEach(el=>el.addEventListener('input',calc));
+radius.addEventListener('input',()=>{manualR=true;calc()});
+$('autoBtn').addEventListener('click',()=>{manualR=false;calc()});
+
+/* B 餘料換算 */
+let rid=0;
+function addRow(w='',m='',q='1'){
+  const i=++rid,row=document.createElement('div');
+  row.className='row';
+  row.innerHTML=`
+    <div class="field"><label for="w${i}">幅寬</label><div class="inbox"><input id="w${i}" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0" value="${w}"><span>mm</span></div></div>
+    <div class="field"><label for="m${i}">米數</label><div class="inbox"><input id="m${i}" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0" value="${m}"><span>米</span></div></div>
+    <div class="field q"><label for="q${i}">數量</label><div class="inbox"><input id="q${i}" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0" value="${q}"><span>捲</span></div></div>
+    <button class="del" type="button" aria-label="刪除這筆">×</button>
+    <div class="sum"></div>`;
+  row.querySelectorAll('input').forEach(el=>el.addEventListener('input',calc2));
+  row.querySelector('.del').addEventListener('click',()=>{row.remove();calc2()});
+  $('rows').appendChild(row);calc2();return row;
+}
+function calc2(){
+  const rows=[...$('rows').children];
+  rows.forEach(r=>r.querySelector('.del').disabled=rows.length===1);
+  const W=parseFloat($('origW').value);
+  let sum=0,valid=0,lines=[];
+  rows.forEach((r,idx)=>{
+    const [w,m,q]=[...r.querySelectorAll('input')].map(x=>parseFloat(x.value));
+    const s=r.querySelector('.sum');
+    if([w,m,q].every(isFinite)){const a=w/1000*m*q;sum+=a;valid++;s.textContent=`${w}/1000 × ${m} × ${q} = ${fmt(a,3)} m²`;lines.push([`第 ${idx+1} 筆`,fmt(a,3)+'m²'])}
+    else s.textContent='';
+  });
+  if(mode!=='remnant') return;
+  const area=valid?fmt(sum,3)+' m²':'—';
+  if(!valid) return render({label:'原材米數',area,error:'請填入餘料的幅寬、米數、數量'});
+  if(!(W>0)) return render({label:'原材米數',area,error:'請填入原材幅寬'});
+  const res=sum/(W/1000);
+  if(lines.length>1) lines.push(['合計',fmt(sum,3)+'m²']);
+  lines.push([`÷ (${W}/1000)`,fmt(res,2)]);
+  render({label:'原材米數',area,value:res,digits:2,lines});
+}
+$('origW').addEventListener('input',calc2);
+$('addRow').addEventListener('click',()=>addRow().querySelector('input').focus());
+
+addRow('250','500','1');
+calc();
+show(location.hash.slice(1));
+
+/* 配色與外型 */
+const SKINS=[['mist','霧藍','#c4d0de','#e8aab8'],['pink','莓果牛奶','#e5cbd2','#a9bfd6'],['matcha','抹茶拿鐵','#c8d3bb','#e2b994'],
+  ['lavender','薰衣草','#cdc5df','#f0bfa6'],['milktea','奶茶','#d4c4b3','#a8b9c9'],['night','夜空','#4a536a','#e8aab8']];
+const SHAPES=[['classic','經典'],['round','圓滾滾'],['pixel','方塊像素']];
+const root=document.documentElement;
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function build(boxId,list,attr,key,fallback){
+  const box=$(boxId);
+  list.forEach(([id,name,c,dot])=>{
+    const b=document.createElement('button');b.type='button';b.dataset.id=id;
+    b.className=c?'sw':'sh';
+    b.innerHTML=c?`<i style="background:${c};--dot:${dot}"></i>${name}`:name;
+    b.addEventListener('click',()=>apply(id));box.appendChild(b);
+  });
+  function apply(id){
+    if(id===fallback) root.removeAttribute(attr); else root.setAttribute(attr,id);
+    box.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===id));
+    store.set(key,id);
+  }
+  const saved=store.get(key);
+  apply(list.some(x=>x[0]===saved)?saved:fallback);
+}
+root.setAttribute('data-skin','white');
+
+/* 輸入完按 Enter／鍵盤上的「下一個」自動跳下一格；點進欄位會全選，直接打就能取代 */
+function fieldsNow(){return [...document.querySelectorAll('.console .panel:not([hidden]) input')]}
+document.addEventListener('focusin',e=>{
+  const el=e.target; if(el.tagName!=='INPUT') return;
+  const list=fieldsNow(), last=list[list.length-1]===el;
+  el.enterKeyHint=last?'done':'next';
+  setTimeout(()=>{try{el.select()}catch(_){}},0);
+});
+document.addEventListener('keydown',e=>{
+  const el=e.target; if(el.tagName!=='INPUT'||e.key!=='Enter') return;
+  e.preventDefault();
+  const list=fieldsNow(), i=list.indexOf(el);
+  if(i<list.length-1){list[i+1].focus();return}
+  el.blur();
+});
+
+/* 按鈕按下／放開的動作（手機觸控也有效） */
+const PRESS='.sw,.sh,.add,.del,.auto,.pills button,.ab button';
+let downEl=null;
+document.addEventListener('pointerdown',e=>{
+  const b=e.target.closest(PRESS); if(!b||b.disabled) return;
+  downEl=b; b.classList.remove('boing'); b.classList.add('is-down');
+});
+function release(){
+  if(!downEl) return; const b=downEl; downEl=null;
+  b.classList.remove('is-down'); void b.offsetWidth; b.classList.add('boing');
+}
+['pointerup','pointercancel','dragstart'].forEach(t=>document.addEventListener(t,release));
+document.addEventListener('animationend',e=>e.target.classList.remove('boing','pop'));
+
+/* D-pad */
+const dpad=$('dpad');
+dpad.querySelectorAll('.dz').forEach(z=>{
+  const dir=z.dataset.dir;
+  z.addEventListener('pointerdown',()=>dpad.classList.add(dir));
+  const up=()=>dpad.classList.remove(dir);
+  ['pointerup','pointerleave','pointercancel'].forEach(t=>z.addEventListener(t,up));
+  z.addEventListener('click',()=>{
+    const n=dir==='left'?'roll':dir==='right'?'remnant':(mode==='roll'?'remnant':'roll');
+    show(n);history.replaceState(null,'','#'+n);
+  });
+});
+
+/* 螢幕數字更新時跳一下 */
+new MutationObserver(()=>{out.classList.remove('pop');void out.offsetWidth;out.classList.add('pop')}).observe(out,{childList:true});
+</script>
+
+</body>
+</html>
